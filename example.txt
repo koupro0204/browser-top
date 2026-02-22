@@ -1,0 +1,14 @@
+My Project
+Top Page,https://example.com
+GitHub,https://github.com
+Google Analytics,https://analytics.google.com
+Search Console,https://search.google.com
+
+Design
+Figma,https://www.figma.com
+Canva,https://www.canva.com
+
+Tools
+Notion,https://www.notion.so
+Slack,https://slack.com
+ChatGPT,https://chat.openai.com

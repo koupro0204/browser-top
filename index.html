@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Tab</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="clock">
+  <div id="time"></div>
+  <div id="date"></div>
+</div>
+
+<div id="content"></div>
+
+<div id="actions">
+  <button class="action-btn" id="btn-add-group">+ Add Group</button>
+  <button class="action-btn" id="btn-import">Import</button>
+  <button class="action-btn" id="btn-export">Export</button>
+</div>
+
+<!-- Add Link Modal -->
+<div class="modal-overlay" id="modal-link">
+  <div class="modal">
+    <h2>Add Link</h2>
+    <label for="input-link-name">Name</label>
+    <input id="input-link-name" type="text" placeholder="Example Site">
+    <label for="input-link-url">URL</label>
+    <input id="input-link-url" type="url" placeholder="https://example.com">
+    <div class="modal-buttons">
+      <button type="button" class="btn-cancel" data-close="modal-link">Cancel</button>
+      <button type="button" class="btn-save" id="btn-save-link">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Group Modal -->
+<div class="modal-overlay" id="modal-group">
+  <div class="modal">
+    <h2>Add Group</h2>
+    <label for="input-group-name">Group Name</label>
+    <input id="input-group-name" type="text" placeholder="My Service">
+    <div class="modal-buttons">
+      <button type="button" class="btn-cancel" data-close="modal-group">Cancel</button>
+      <button type="button" class="btn-save" id="btn-save-group">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Link Modal -->
+<div class="modal-overlay" id="modal-edit-link">
+  <div class="modal">
+    <h2>Edit Link</h2>
+    <label for="input-edit-link-name">Name</label>
+    <input id="input-edit-link-name" type="text">
+    <label for="input-edit-link-url">URL</label>
+    <input id="input-edit-link-url" type="url">
+    <div class="modal-buttons">
+      <button type="button" class="btn-cancel" data-close="modal-edit-link">Cancel</button>
+      <button type="button" class="btn-save" id="btn-save-edit-link">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Group Modal -->
+<div class="modal-overlay" id="modal-edit-group">
+  <div class="modal">
+    <h2>Edit Group Name</h2>
+    <label for="input-edit-group-name">Group Name</label>
+    <input id="input-edit-group-name" type="text">
+    <div class="modal-buttons">
+      <button type="button" class="btn-cancel" data-close="modal-edit-group">Cancel</button>
+      <button type="button" class="btn-save" id="btn-save-edit-group">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal wide">
+    <h2>Import</h2>
+    <label for="input-import">Paste text</label>
+    <textarea id="input-import" placeholder="グループ名
+表示名,https://example.com
+https://example.org
+
+別のグループ
+表示名,https://another.com"></textarea>
+    <div class="hint">
+      - 1行目: グループ名<br>
+      - <code>表示名,URL</code> または <code>URL</code> のみ（ホスト名を自動採用）<br>
+      - 空行でグループ区切り
+    </div>
+    <div class="modal-buttons">
+      <button type="button" class="btn-cancel" data-close="modal-import">Cancel</button>
+      <button type="button" class="btn-save" id="btn-do-import">Import</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
