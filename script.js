@@ -10,15 +10,28 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// Data: [{ name: "Group", links: [{ name, url }] }]
-function getData() {
-  try {
-    return JSON.parse(localStorage.getItem('browser-top-data')) || [];
-  } catch { return []; }
+// Storage: chrome.storage.local (extension) or localStorage (fallback)
+const isExtension = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
+
+function getData(callback) {
+  if (isExtension) {
+    chrome.storage.local.get('browser-top-data', function(result) {
+      callback(result['browser-top-data'] || []);
+    });
+  } else {
+    try {
+      callback(JSON.parse(localStorage.getItem('browser-top-data')) || []);
+    } catch { callback([]); }
+  }
 }
 
-function saveData(data) {
-  localStorage.setItem('browser-top-data', JSON.stringify(data));
+function saveData(data, callback) {
+  if (isExtension) {
+    chrome.storage.local.set({ 'browser-top-data': data }, callback);
+  } else {
+    localStorage.setItem('browser-top-data', JSON.stringify(data));
+    if (callback) callback();
+  }
 }
 
 function faviconURL(url) {
@@ -40,122 +53,123 @@ let editLinkIndex = null;
 let editGroupIndex = null;
 
 function render() {
-  const container = document.getElementById('content');
-  container.innerHTML = '';
-  const data = getData();
+  getData(function(data) {
+    const container = document.getElementById('content');
+    container.innerHTML = '';
 
-  data.forEach(function(group, gi) {
-    const section = document.createElement('div');
-    section.className = 'group';
+    data.forEach(function(group, gi) {
+      const section = document.createElement('div');
+      section.className = 'group';
 
-    const header = document.createElement('div');
-    header.className = 'group-header';
+      const header = document.createElement('div');
+      header.className = 'group-header';
 
-    const title = document.createElement('div');
-    title.className = 'group-name';
-    title.textContent = group.name;
+      const title = document.createElement('div');
+      title.className = 'group-name';
+      title.textContent = group.name;
 
-    const editGroup = document.createElement('button');
-    editGroup.className = 'group-edit';
-    editGroup.textContent = '\u270e';
-    editGroup.title = 'Rename group';
-    editGroup.addEventListener('click', function() {
-      editGroupIndex = gi;
-      document.getElementById('input-edit-group-name').value = group.name;
-      openModal('modal-edit-group');
-      document.getElementById('input-edit-group-name').focus();
-      document.getElementById('input-edit-group-name').select();
-    });
-
-    const delGroup = document.createElement('button');
-    delGroup.className = 'group-delete';
-    delGroup.textContent = '\u00d7 delete';
-    delGroup.addEventListener('click', function() {
-      if (!confirm('Delete group "' + group.name + '" and all its links?')) return;
-      const d = getData();
-      d.splice(gi, 1);
-      saveData(d);
-      render();
-    });
-
-    header.appendChild(title);
-    header.appendChild(editGroup);
-    header.appendChild(delGroup);
-    section.appendChild(header);
-
-    const grid = document.createElement('div');
-    grid.className = 'group-grid';
-
-    group.links.forEach(function(link, li) {
-      const card = document.createElement('a');
-      card.className = 'card';
-      card.href = link.url;
-      card.target = '_blank';
-      card.rel = 'noopener noreferrer';
-
-      const del = document.createElement('button');
-      del.className = 'delete-btn';
-      del.textContent = '\u00d7';
-      del.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const d = getData();
-        d[gi].links.splice(li, 1);
-        saveData(d);
-        render();
+      const editGroup = document.createElement('button');
+      editGroup.className = 'group-edit';
+      editGroup.textContent = '\u270e';
+      editGroup.title = 'Rename group';
+      editGroup.addEventListener('click', function() {
+        editGroupIndex = gi;
+        document.getElementById('input-edit-group-name').value = group.name;
+        openModal('modal-edit-group');
+        document.getElementById('input-edit-group-name').focus();
+        document.getElementById('input-edit-group-name').select();
       });
 
-      const img = document.createElement('img');
-      img.src = faviconURL(link.url);
-      img.alt = '';
-
-      const name = document.createElement('div');
-      name.className = 'name';
-      name.textContent = link.name;
-
-      const urlEl = document.createElement('div');
-      urlEl.className = 'url-text';
-      urlEl.textContent = hostFromURL(link.url);
-
-      const editBtn = document.createElement('button');
-      editBtn.className = 'edit-btn';
-      editBtn.textContent = '\u270e';
-      editBtn.title = 'Edit';
-      editBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        editLinkGroupIndex = gi;
-        editLinkIndex = li;
-        document.getElementById('input-edit-link-name').value = link.name;
-        document.getElementById('input-edit-link-url').value = link.url;
-        openModal('modal-edit-link');
-        document.getElementById('input-edit-link-name').focus();
-        document.getElementById('input-edit-link-name').select();
+      const delGroup = document.createElement('button');
+      delGroup.className = 'group-delete';
+      delGroup.textContent = '\u00d7 delete';
+      delGroup.addEventListener('click', function() {
+        if (!confirm('Delete group "' + group.name + '" and all its links?')) return;
+        getData(function(d) {
+          d.splice(gi, 1);
+          saveData(d, render);
+        });
       });
 
-      card.appendChild(img);
-      card.appendChild(name);
-      card.appendChild(urlEl);
-      card.appendChild(editBtn);
-      card.appendChild(del);
-      grid.appendChild(card);
-    });
+      header.appendChild(title);
+      header.appendChild(editGroup);
+      header.appendChild(delGroup);
+      section.appendChild(header);
 
-    // Add link button per group
-    const addBtn = document.createElement('div');
-    addBtn.className = 'card-add-link';
-    addBtn.innerHTML = '<span>+</span>';
-    addBtn.addEventListener('click', function() {
-      addLinkGroupIndex = gi;
-      document.getElementById('input-link-name').value = '';
-      document.getElementById('input-link-url').value = '';
-      openModal('modal-link');
-      document.getElementById('input-link-name').focus();
-    });
-    grid.appendChild(addBtn);
+      const grid = document.createElement('div');
+      grid.className = 'group-grid';
 
-    section.appendChild(grid);
-    container.appendChild(section);
+      group.links.forEach(function(link, li) {
+        const card = document.createElement('a');
+        card.className = 'card';
+        card.href = link.url;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+
+        const del = document.createElement('button');
+        del.className = 'delete-btn';
+        del.textContent = '\u00d7';
+        del.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          getData(function(d) {
+            d[gi].links.splice(li, 1);
+            saveData(d, render);
+          });
+        });
+
+        const img = document.createElement('img');
+        img.src = faviconURL(link.url);
+        img.alt = '';
+
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = link.name;
+
+        const urlEl = document.createElement('div');
+        urlEl.className = 'url-text';
+        urlEl.textContent = hostFromURL(link.url);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = '\u270e';
+        editBtn.title = 'Edit';
+        editBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          editLinkGroupIndex = gi;
+          editLinkIndex = li;
+          document.getElementById('input-edit-link-name').value = link.name;
+          document.getElementById('input-edit-link-url').value = link.url;
+          openModal('modal-edit-link');
+          document.getElementById('input-edit-link-name').focus();
+          document.getElementById('input-edit-link-name').select();
+        });
+
+        card.appendChild(img);
+        card.appendChild(name);
+        card.appendChild(urlEl);
+        card.appendChild(editBtn);
+        card.appendChild(del);
+        grid.appendChild(card);
+      });
+
+      // Add link button per group
+      const addBtn = document.createElement('div');
+      addBtn.className = 'card-add-link';
+      addBtn.innerHTML = '<span>+</span>';
+      addBtn.addEventListener('click', function() {
+        addLinkGroupIndex = gi;
+        document.getElementById('input-link-name').value = '';
+        document.getElementById('input-link-url').value = '';
+        openModal('modal-link');
+        document.getElementById('input-link-name').focus();
+      });
+      grid.appendChild(addBtn);
+
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
   });
 }
 
@@ -186,13 +200,15 @@ document.getElementById('btn-save-link').addEventListener('click', function() {
   let url = document.getElementById('input-link-url').value.trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  const d = getData();
-  if (addLinkGroupIndex !== null && d[addLinkGroupIndex]) {
-    d[addLinkGroupIndex].links.push({ name: name || hostFromURL(url), url: url });
-    saveData(d);
-    closeModal('modal-link');
-    render();
-  }
+  getData(function(d) {
+    if (addLinkGroupIndex !== null && d[addLinkGroupIndex]) {
+      d[addLinkGroupIndex].links.push({ name: name || hostFromURL(url), url: url });
+      saveData(d, function() {
+        closeModal('modal-link');
+        render();
+      });
+    }
+  });
 });
 
 document.getElementById('input-link-url').addEventListener('keydown', function(e) {
@@ -209,11 +225,13 @@ document.getElementById('btn-add-group').addEventListener('click', function() {
 document.getElementById('btn-save-group').addEventListener('click', function() {
   const name = document.getElementById('input-group-name').value.trim();
   if (!name) return;
-  const d = getData();
-  d.push({ name: name, links: [] });
-  saveData(d);
-  closeModal('modal-group');
-  render();
+  getData(function(d) {
+    d.push({ name: name, links: [] });
+    saveData(d, function() {
+      closeModal('modal-group');
+      render();
+    });
+  });
 });
 
 document.getElementById('input-group-name').addEventListener('keydown', function(e) {
@@ -226,14 +244,16 @@ document.getElementById('btn-save-edit-link').addEventListener('click', function
   let url = document.getElementById('input-edit-link-url').value.trim();
   if (!name || !url) return;
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  const d = getData();
-  if (editLinkGroupIndex !== null && editLinkIndex !== null && d[editLinkGroupIndex] && d[editLinkGroupIndex].links[editLinkIndex]) {
-    d[editLinkGroupIndex].links[editLinkIndex].name = name;
-    d[editLinkGroupIndex].links[editLinkIndex].url = url;
-    saveData(d);
-    closeModal('modal-edit-link');
-    render();
-  }
+  getData(function(d) {
+    if (editLinkGroupIndex !== null && editLinkIndex !== null && d[editLinkGroupIndex] && d[editLinkGroupIndex].links[editLinkIndex]) {
+      d[editLinkGroupIndex].links[editLinkIndex].name = name;
+      d[editLinkGroupIndex].links[editLinkIndex].url = url;
+      saveData(d, function() {
+        closeModal('modal-edit-link');
+        render();
+      });
+    }
+  });
 });
 
 document.getElementById('input-edit-link-url').addEventListener('keydown', function(e) {
@@ -244,13 +264,15 @@ document.getElementById('input-edit-link-url').addEventListener('keydown', funct
 document.getElementById('btn-save-edit-group').addEventListener('click', function() {
   const name = document.getElementById('input-edit-group-name').value.trim();
   if (!name) return;
-  const d = getData();
-  if (editGroupIndex !== null && d[editGroupIndex]) {
-    d[editGroupIndex].name = name;
-    saveData(d);
-    closeModal('modal-edit-group');
-    render();
-  }
+  getData(function(d) {
+    if (editGroupIndex !== null && d[editGroupIndex]) {
+      d[editGroupIndex].name = name;
+      saveData(d, function() {
+        closeModal('modal-edit-group');
+        render();
+      });
+    }
+  });
 });
 
 document.getElementById('input-edit-group-name').addEventListener('keydown', function(e) {
@@ -278,7 +300,6 @@ function parseImportText(text) {
     var links = [];
     for (var i = 1; i < lines.length; i++) {
       var line = lines[i];
-      // "表示名,URL" format
       var commaIdx = line.indexOf(',http');
       if (commaIdx !== -1) {
         var n = line.substring(0, commaIdx).trim();
@@ -300,28 +321,31 @@ document.getElementById('btn-do-import').addEventListener('click', function() {
   if (!text) return;
   const imported = parseImportText(text);
   if (imported.length === 0) return;
-  const d = getData();
-  imported.forEach(function(g) { d.push(g); });
-  saveData(d);
-  closeModal('modal-import');
-  render();
+  getData(function(d) {
+    imported.forEach(function(g) { d.push(g); });
+    saveData(d, function() {
+      closeModal('modal-import');
+      render();
+    });
+  });
 });
 
 // Export
 document.getElementById('btn-export').addEventListener('click', function() {
-  const d = getData();
-  let text = '';
-  d.forEach(function(g, i) {
-    text += g.name + '\n';
-    g.links.forEach(function(l) {
-      text += l.name + ',' + l.url + '\n';
+  getData(function(d) {
+    let text = '';
+    d.forEach(function(g, i) {
+      text += g.name + '\n';
+      g.links.forEach(function(l) {
+        text += l.name + ',' + l.url + '\n';
+      });
+      if (i < d.length - 1) text += '\n';
     });
-    if (i < d.length - 1) text += '\n';
-  });
-  navigator.clipboard.writeText(text).then(function() {
-    alert('Copied to clipboard!');
-  }).catch(function() {
-    prompt('Copy the text below:', text);
+    navigator.clipboard.writeText(text).then(function() {
+      alert('Copied to clipboard!');
+    }).catch(function() {
+      prompt('Copy the text below:', text);
+    });
   });
 });
 
