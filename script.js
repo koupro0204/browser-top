@@ -52,6 +52,10 @@ let editLinkGroupIndex = null;
 let editLinkIndex = null;
 let editGroupIndex = null;
 
+// Drag state for reordering
+let dragSrcGi = null;
+let dragSrcLi = null;
+
 function render() {
   getData(function(data) {
     const container = document.getElementById('content');
@@ -68,6 +72,19 @@ function render() {
       title.className = 'group-name';
       title.textContent = group.name;
 
+      // #5: Add link button in header
+      const addLink = document.createElement('button');
+      addLink.className = 'group-add';
+      addLink.textContent = '+';
+      addLink.title = 'Add link';
+      addLink.addEventListener('click', function() {
+        addLinkGroupIndex = gi;
+        document.getElementById('input-link-name').value = '';
+        document.getElementById('input-link-url').value = '';
+        openModal('modal-link');
+        document.getElementById('input-link-name').focus();
+      });
+
       const editGroup = document.createElement('button');
       editGroup.className = 'group-edit';
       editGroup.textContent = '\u270e';
@@ -82,7 +99,8 @@ function render() {
 
       const delGroup = document.createElement('button');
       delGroup.className = 'group-delete';
-      delGroup.textContent = '\u00d7 delete';
+      delGroup.textContent = '\u00d7';
+      delGroup.title = 'Delete group';
       delGroup.addEventListener('click', function() {
         if (!confirm('Delete group "' + group.name + '" and all its links?')) return;
         getData(function(d) {
@@ -92,12 +110,39 @@ function render() {
       });
 
       header.appendChild(title);
+      header.appendChild(addLink);
       header.appendChild(editGroup);
       header.appendChild(delGroup);
       section.appendChild(header);
 
       const grid = document.createElement('div');
       grid.className = 'group-grid';
+      grid.dataset.gi = gi;
+
+      // #4: Drop zone for external links (per group)
+      grid.addEventListener('dragover', function(e) {
+        // Only handle external drops (not internal reorder)
+        if (dragSrcGi !== null) return;
+        e.preventDefault();
+        grid.classList.add('drag-over-group');
+      });
+      grid.addEventListener('dragleave', function(e) {
+        if (!grid.contains(e.relatedTarget)) {
+          grid.classList.remove('drag-over-group');
+        }
+      });
+      grid.addEventListener('drop', function(e) {
+        grid.classList.remove('drag-over-group');
+        if (dragSrcGi !== null) return; // internal reorder handled by card
+        e.preventDefault();
+        var url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || '';
+        url = url.trim().split('\n')[0].trim();
+        if (!/^https?:\/\//i.test(url)) return;
+        getData(function(d) {
+          d[gi].links.push({ name: hostFromURL(url), url: url });
+          saveData(d, render);
+        });
+      });
 
       group.links.forEach(function(link, li) {
         const card = document.createElement('a');
@@ -105,6 +150,63 @@ function render() {
         card.href = link.url;
         card.target = '_blank';
         card.rel = 'noopener noreferrer';
+        card.draggable = true;
+        card.dataset.gi = gi;
+        card.dataset.li = li;
+
+        // #2: Drag and drop reorder
+        card.addEventListener('dragstart', function(e) {
+          dragSrcGi = gi;
+          dragSrcLi = li;
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', '');
+        });
+        card.addEventListener('dragend', function() {
+          dragSrcGi = null;
+          dragSrcLi = null;
+          card.classList.remove('dragging');
+          document.querySelectorAll('.drag-over').forEach(function(el) {
+            el.classList.remove('drag-over');
+          });
+        });
+        card.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          if (dragSrcGi !== null) {
+            e.dataTransfer.dropEffect = 'move';
+          } else {
+            e.dataTransfer.dropEffect = 'copy';
+          }
+          card.classList.add('drag-over');
+        });
+        card.addEventListener('dragleave', function() {
+          card.classList.remove('drag-over');
+        });
+        card.addEventListener('drop', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          card.classList.remove('drag-over');
+          // External drop (e.g. from bookmark bar)
+          if (dragSrcGi === null) {
+            var url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || '';
+            url = url.trim().split('\n')[0].trim();
+            if (!/^https?:\/\//i.test(url)) return;
+            getData(function(d) {
+              d[gi].links.push({ name: hostFromURL(url), url: url });
+              saveData(d, render);
+            });
+            return;
+          }
+          // Internal reorder
+          var targetGi = gi;
+          var targetLi = li;
+          if (dragSrcGi === targetGi && dragSrcLi === targetLi) return;
+          getData(function(d) {
+            var item = d[dragSrcGi].links.splice(dragSrcLi, 1)[0];
+            d[targetGi].links.splice(targetLi, 0, item);
+            saveData(d, render);
+          });
+        });
 
         const del = document.createElement('button');
         del.className = 'delete-btn';
@@ -154,18 +256,32 @@ function render() {
         grid.appendChild(card);
       });
 
-      // Add link button per group
-      const addBtn = document.createElement('div');
-      addBtn.className = 'card-add-link';
-      addBtn.innerHTML = '<span>+</span>';
-      addBtn.addEventListener('click', function() {
-        addLinkGroupIndex = gi;
-        document.getElementById('input-link-name').value = '';
-        document.getElementById('input-link-url').value = '';
-        openModal('modal-link');
-        document.getElementById('input-link-name').focus();
-      });
-      grid.appendChild(addBtn);
+      // #4: Drop zone message when group is empty
+      if (group.links.length === 0) {
+        var dropZone = document.createElement('div');
+        dropZone.className = 'drop-zone';
+        dropZone.textContent = 'Drop link here';
+        dropZone.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          dropZone.classList.add('drag-hover');
+        });
+        dropZone.addEventListener('dragleave', function() {
+          dropZone.classList.remove('drag-hover');
+        });
+        dropZone.addEventListener('drop', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('drag-hover');
+          var url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || '';
+          url = url.trim().split('\n')[0].trim();
+          if (!/^https?:\/\//i.test(url)) return;
+          getData(function(d) {
+            d[gi].links.push({ name: hostFromURL(url), url: url });
+            saveData(d, render);
+          });
+        });
+        grid.appendChild(dropZone);
+      }
 
       section.appendChild(grid);
       container.appendChild(section);
@@ -316,13 +432,24 @@ function parseImportText(text) {
   return groups;
 }
 
+// #3: Merge imported groups with existing ones by name
 document.getElementById('btn-do-import').addEventListener('click', function() {
   const text = document.getElementById('input-import').value.trim();
   if (!text) return;
   const imported = parseImportText(text);
   if (imported.length === 0) return;
   getData(function(d) {
-    imported.forEach(function(g) { d.push(g); });
+    imported.forEach(function(g) {
+      var existing = null;
+      for (var i = 0; i < d.length; i++) {
+        if (d[i].name === g.name) { existing = d[i]; break; }
+      }
+      if (existing) {
+        g.links.forEach(function(l) { existing.links.push(l); });
+      } else {
+        d.push(g);
+      }
+    });
     saveData(d, function() {
       closeModal('modal-import');
       render();
