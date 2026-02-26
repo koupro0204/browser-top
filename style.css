@@ -42,6 +42,7 @@ body {
   flex-wrap: wrap;
   gap: 24px;
   align-items: flex-start;
+  justify-content: center;
 }
 
 /* Group */
@@ -210,6 +211,16 @@ body {
 }
 
 /* Drag and drop */
+.group.dragging {
+  opacity: 0.4;
+}
+
+.group.drag-over-group-reorder {
+  outline: 2px dashed #4a9fff;
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+
 .card.dragging {
   opacity: 0.4;
 }

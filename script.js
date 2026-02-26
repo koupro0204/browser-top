@@ -76,6 +76,7 @@ let editGroupIndex = null;
 // Drag state for reordering
 let dragSrcGi = null;
 let dragSrcLi = null;
+let dragSrcGroupIdx = null;
 
 function render() {
   getData(function(data) {
@@ -128,6 +129,47 @@ function render() {
         if (!confirm('Delete group "' + group.name + '" and all its links?')) return;
         getData(function(d) {
           d.splice(gi, 1);
+          saveData(d, render);
+        });
+      });
+
+      // Group drag handle
+      title.draggable = true;
+      title.style.cursor = 'grab';
+      title.addEventListener('dragstart', function(e) {
+        dragSrcGroupIdx = gi;
+        section.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+      });
+      title.addEventListener('dragend', function() {
+        dragSrcGroupIdx = null;
+        section.classList.remove('dragging');
+        document.querySelectorAll('.group.drag-over-group-reorder').forEach(function(el) {
+          el.classList.remove('drag-over-group-reorder');
+        });
+      });
+
+      section.addEventListener('dragover', function(e) {
+        if (dragSrcGroupIdx === null) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        section.classList.add('drag-over-group-reorder');
+      });
+      section.addEventListener('dragleave', function(e) {
+        if (!section.contains(e.relatedTarget)) {
+          section.classList.remove('drag-over-group-reorder');
+        }
+      });
+      section.addEventListener('drop', function(e) {
+        if (dragSrcGroupIdx === null) return;
+        e.preventDefault();
+        e.stopPropagation();
+        section.classList.remove('drag-over-group-reorder');
+        if (dragSrcGroupIdx === gi) return;
+        getData(function(d) {
+          var item = d.splice(dragSrcGroupIdx, 1)[0];
+          d.splice(gi, 0, item);
           saveData(d, render);
         });
       });
