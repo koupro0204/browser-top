@@ -46,15 +46,19 @@ body {
 
 /* Group */
 .group {
-  flex: 1 1 280px;
-  max-width: 360px;
+  flex: 0 0 auto;
 }
 
 .group-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: 12px;
+}
+
+.group-actions {
+  display: flex;
+  gap: 4px;
 }
 
 .group-name {
@@ -80,8 +84,8 @@ body {
 }
 
 .group-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 80px);
   gap: 8px;
 }
 
@@ -90,16 +94,17 @@ body {
   position: relative;
   background: #16213e;
   border-radius: 10px;
-  padding: 10px 16px;
+  padding: 10px 8px 8px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   text-decoration: none;
   color: #e0e0e0;
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  width: 80px;
 }
 
 .card:hover {
@@ -108,32 +113,37 @@ body {
 }
 
 .card img {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
 }
 
 .card .name {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
 }
 
 .card .edit-btn {
-  width: 20px;
-  height: 20px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
   border: none;
   border-radius: 50%;
   background: #0f3460;
   color: #fff;
-  font-size: 11px;
-  line-height: 20px;
+  font-size: 10px;
+  line-height: 18px;
   text-align: center;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s;
-  flex-shrink: 0;
-  margin-left: auto;
 }
 
 .card:hover .edit-btn {
@@ -160,30 +170,22 @@ body {
   background: rgba(74,159,255,0.1);
 }
 
-.card .url-text {
-  font-size: 11px;
-  color: #555;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-
 .card .delete-btn {
-  width: 20px;
-  height: 20px;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
   border: none;
   border-radius: 50%;
   background: #e94560;
   color: #fff;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: 12px;
+  line-height: 18px;
   text-align: center;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s;
-  flex-shrink: 0;
 }
 
 .card:hover .delete-btn {
@@ -213,7 +215,8 @@ body {
 }
 
 .card.drag-over {
-  border-top: 2px solid #e94560;
+  outline: 2px solid #e94560;
+  outline-offset: -2px;
 }
 
 .group-grid.drag-over-group {

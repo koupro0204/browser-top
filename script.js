@@ -132,10 +132,13 @@ function render() {
         });
       });
 
+      const actions = document.createElement('div');
+      actions.className = 'group-actions';
+      actions.appendChild(addLink);
+      actions.appendChild(editGroup);
+      actions.appendChild(delGroup);
+      header.appendChild(actions);
       header.appendChild(title);
-      header.appendChild(addLink);
-      header.appendChild(editGroup);
-      header.appendChild(delGroup);
       section.appendChild(header);
 
       const grid = document.createElement('div');
@@ -252,10 +255,6 @@ function render() {
         name.className = 'name';
         name.textContent = link.name;
 
-        const urlEl = document.createElement('div');
-        urlEl.className = 'url-text';
-        urlEl.textContent = hostFromURL(link.url);
-
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-btn';
         editBtn.textContent = '\u270e';
@@ -273,11 +272,10 @@ function render() {
           document.getElementById('input-edit-link-name').select();
         });
 
+        card.appendChild(del);
+        card.appendChild(editBtn);
         card.appendChild(img);
         card.appendChild(name);
-        card.appendChild(urlEl);
-        card.appendChild(editBtn);
-        card.appendChild(del);
         grid.appendChild(card);
       });
 
