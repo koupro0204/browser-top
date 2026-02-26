@@ -2,7 +2,8 @@
 
 ブラウザのスタートページとして使えるカスタムダッシュボード。
 よく使うサービスのURLをグループごとにカード表示し、ブラウザ上から追加・編集・削除できます。
-<img width="2940" height="1606" alt="image" src="https://github.com/user-attachments/assets/5d3a47c8-3e85-465b-bff7-35d2288bf42e" />
+<img width="2940" height="1610" alt="image" src="https://github.com/user-attachments/assets/1e040f0b-27f9-4c19-910b-cd9d4ec73594" />
+
 
 ## Features
 
