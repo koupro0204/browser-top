@@ -19,6 +19,7 @@
   <button class="action-btn" id="btn-add-group">+ Add Group</button>
   <button class="action-btn" id="btn-import">Import</button>
   <button class="action-btn" id="btn-export">Export</button>
+  <button class="action-btn" id="btn-settings">Settings</button>
 </div>
 
 <!-- Add Link Modal -->
@@ -29,6 +30,8 @@
     <input id="input-link-name" type="text" placeholder="Example Site">
     <label for="input-link-url">URL</label>
     <input id="input-link-url" type="url" placeholder="https://example.com">
+    <label for="input-link-icon">Icon URL <span class="hint-inline">(optional)</span></label>
+    <input id="input-link-icon" type="url" placeholder="https://example.com/favicon.ico">
     <div class="modal-buttons">
       <button type="button" class="btn-cancel" data-close="modal-link">Cancel</button>
       <button type="button" class="btn-save" id="btn-save-link">Add</button>
@@ -57,6 +60,8 @@
     <input id="input-edit-link-name" type="text">
     <label for="input-edit-link-url">URL</label>
     <input id="input-edit-link-url" type="url">
+    <label for="input-edit-link-icon">Icon URL <span class="hint-inline">(optional)</span></label>
+    <input id="input-edit-link-icon" type="url" placeholder="https://example.com/favicon.ico">
     <div class="modal-buttons">
       <button type="button" class="btn-cancel" data-close="modal-edit-link">Cancel</button>
       <button type="button" class="btn-save" id="btn-save-edit-link">Save</button>
@@ -96,6 +101,20 @@ https://example.org
     <div class="modal-buttons">
       <button type="button" class="btn-cancel" data-close="modal-import">Cancel</button>
       <button type="button" class="btn-save" id="btn-do-import">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal wide">
+    <h2>Favicon Settings</h2>
+    <p class="hint" style="margin-bottom:12px">Set custom favicon URLs per hostname. These apply to all links matching the host.</p>
+    <div id="favicon-map-list"></div>
+    <button type="button" class="btn-add-row" id="btn-add-favicon-row">+ Add</button>
+    <div class="modal-buttons">
+      <button type="button" class="btn-cancel" data-close="modal-settings">Cancel</button>
+      <button type="button" class="btn-save" id="btn-save-settings">Save</button>
     </div>
   </div>
 </div>

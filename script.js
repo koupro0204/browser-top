@@ -34,10 +34,31 @@ function saveData(data, callback) {
   }
 }
 
+function getFaviconMap(callback) {
+  if (isExtension) {
+    chrome.storage.local.get('browser-top-favicon-map', function(result) {
+      callback(result['browser-top-favicon-map'] || {});
+    });
+  } else {
+    try {
+      callback(JSON.parse(localStorage.getItem('browser-top-favicon-map')) || {});
+    } catch { callback({}); }
+  }
+}
+
+function saveFaviconMap(map, callback) {
+  if (isExtension) {
+    chrome.storage.local.set({ 'browser-top-favicon-map': map }, callback);
+  } else {
+    localStorage.setItem('browser-top-favicon-map', JSON.stringify(map));
+    if (callback) callback();
+  }
+}
+
 function faviconURL(url) {
   try {
-    const host = new URL(url).hostname;
-    return 'https://www.google.com/s2/favicons?domain=' + host + '&sz=64';
+    const origin = new URL(url).origin;
+    return 'https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=' + encodeURIComponent(origin) + '&size=64';
   } catch { return ''; }
 }
 
@@ -58,6 +79,7 @@ let dragSrcLi = null;
 
 function render() {
   getData(function(data) {
+    getFaviconMap(function(faviconMap) {
     const container = document.getElementById('content');
     container.innerHTML = '';
 
@@ -81,6 +103,7 @@ function render() {
         addLinkGroupIndex = gi;
         document.getElementById('input-link-name').value = '';
         document.getElementById('input-link-url').value = '';
+        document.getElementById('input-link-icon').value = '';
         openModal('modal-link');
         document.getElementById('input-link-name').focus();
       });
@@ -221,7 +244,8 @@ function render() {
         });
 
         const img = document.createElement('img');
-        img.src = faviconURL(link.url);
+        var hostname = hostFromURL(link.url);
+        img.src = link.icon || faviconMap[hostname] || faviconURL(link.url);
         img.alt = '';
 
         const name = document.createElement('div');
@@ -243,6 +267,7 @@ function render() {
           editLinkIndex = li;
           document.getElementById('input-edit-link-name').value = link.name;
           document.getElementById('input-edit-link-url').value = link.url;
+          document.getElementById('input-edit-link-icon').value = link.icon || '';
           openModal('modal-edit-link');
           document.getElementById('input-edit-link-name').focus();
           document.getElementById('input-edit-link-name').select();
@@ -286,6 +311,7 @@ function render() {
       section.appendChild(grid);
       container.appendChild(section);
     });
+    }); // end getFaviconMap
   });
 }
 
@@ -314,11 +340,14 @@ document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
 document.getElementById('btn-save-link').addEventListener('click', function() {
   const name = document.getElementById('input-link-name').value.trim();
   let url = document.getElementById('input-link-url').value.trim();
+  const icon = document.getElementById('input-link-icon').value.trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   getData(function(d) {
     if (addLinkGroupIndex !== null && d[addLinkGroupIndex]) {
-      d[addLinkGroupIndex].links.push({ name: name || hostFromURL(url), url: url });
+      var linkObj = { name: name || hostFromURL(url), url: url };
+      if (icon) linkObj.icon = icon;
+      d[addLinkGroupIndex].links.push(linkObj);
       saveData(d, function() {
         closeModal('modal-link');
         render();
@@ -358,12 +387,15 @@ document.getElementById('input-group-name').addEventListener('keydown', function
 document.getElementById('btn-save-edit-link').addEventListener('click', function() {
   const name = document.getElementById('input-edit-link-name').value.trim();
   let url = document.getElementById('input-edit-link-url').value.trim();
+  const icon = document.getElementById('input-edit-link-icon').value.trim();
   if (!name || !url) return;
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   getData(function(d) {
     if (editLinkGroupIndex !== null && editLinkIndex !== null && d[editLinkGroupIndex] && d[editLinkGroupIndex].links[editLinkIndex]) {
       d[editLinkGroupIndex].links[editLinkIndex].name = name;
       d[editLinkGroupIndex].links[editLinkIndex].url = url;
+      if (icon) d[editLinkGroupIndex].links[editLinkIndex].icon = icon;
+      else delete d[editLinkGroupIndex].links[editLinkIndex].icon;
       saveData(d, function() {
         closeModal('modal-edit-link');
         render();
@@ -473,6 +505,65 @@ document.getElementById('btn-export').addEventListener('click', function() {
     }).catch(function() {
       prompt('Copy the text below:', text);
     });
+  });
+});
+
+// Settings (Favicon Map)
+function createFaviconRow(host, url) {
+  var row = document.createElement('div');
+  row.className = 'favicon-row';
+  var hostInput = document.createElement('input');
+  hostInput.type = 'text';
+  hostInput.placeholder = 'ads.google.com';
+  hostInput.value = host || '';
+  hostInput.className = 'favicon-row-host';
+  var urlInput = document.createElement('input');
+  urlInput.type = 'url';
+  urlInput.placeholder = 'https://example.com/favicon.ico';
+  urlInput.value = url || '';
+  urlInput.className = 'favicon-row-url';
+  var delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'favicon-row-delete';
+  delBtn.textContent = '\u00d7';
+  delBtn.addEventListener('click', function() { row.remove(); });
+  row.appendChild(hostInput);
+  row.appendChild(urlInput);
+  row.appendChild(delBtn);
+  return row;
+}
+
+document.getElementById('btn-settings').addEventListener('click', function() {
+  var list = document.getElementById('favicon-map-list');
+  list.innerHTML = '';
+  getFaviconMap(function(map) {
+    var keys = Object.keys(map);
+    if (keys.length === 0) {
+      list.appendChild(createFaviconRow('', ''));
+    } else {
+      keys.forEach(function(host) {
+        list.appendChild(createFaviconRow(host, map[host]));
+      });
+    }
+    openModal('modal-settings');
+  });
+});
+
+document.getElementById('btn-add-favicon-row').addEventListener('click', function() {
+  document.getElementById('favicon-map-list').appendChild(createFaviconRow('', ''));
+});
+
+document.getElementById('btn-save-settings').addEventListener('click', function() {
+  var rows = document.getElementById('favicon-map-list').querySelectorAll('.favicon-row');
+  var map = {};
+  rows.forEach(function(row) {
+    var host = row.querySelector('.favicon-row-host').value.trim();
+    var url = row.querySelector('.favicon-row-url').value.trim();
+    if (host && url) map[host] = url;
+  });
+  saveFaviconMap(map, function() {
+    closeModal('modal-settings');
+    render();
   });
 });
 
