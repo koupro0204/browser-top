@@ -45,11 +45,38 @@
 <div class="modal-overlay" id="modal-group">
   <div class="modal">
     <h2>Add Group</h2>
+    <label>Type</label>
+    <div class="group-type-select">
+      <label class="group-type-option selected" data-type="normal">
+        <input type="radio" name="group-type" value="normal" checked>
+        <span class="group-type-icon">&#128279;</span> Normal
+      </label>
+      <label class="group-type-option" data-type="music">
+        <input type="radio" name="group-type" value="music">
+        <span class="group-type-icon">&#9835;</span> Music
+      </label>
+    </div>
     <label for="input-group-name">Group Name</label>
     <input id="input-group-name" type="text" placeholder="My Service">
     <div class="modal-buttons">
       <button type="button" class="btn-cancel" data-close="modal-group">Cancel</button>
       <button type="button" class="btn-save" id="btn-save-group">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Music Track Modal -->
+<div class="modal-overlay" id="modal-music-track">
+  <div class="modal">
+    <h2>Add Track</h2>
+    <label for="input-music-name">Track Name</label>
+    <input id="input-music-name" type="text" placeholder="Song Title">
+    <label for="input-music-url">YouTube Music URL</label>
+    <input id="input-music-url" type="url" placeholder="https://music.youtube.com/watch?v=...">
+    <div id="music-track-preview" class="music-track-preview"></div>
+    <div class="modal-buttons">
+      <button type="button" class="btn-cancel" data-close="modal-music-track">Cancel</button>
+      <button type="button" class="btn-save" id="btn-save-music-track">Add</button>
     </div>
   </div>
 </div>
@@ -96,7 +123,7 @@ https://example.org
 別のグループ
 表示名,https://another.com"></textarea>
     <div class="hint">
-      - 1行目: グループ名<br>
+      - 1行目: グループ名（Music: <code>[music]グループ名</code>）<br>
       - <code>表示名,URL</code> または <code>URL</code> のみ（ホスト名を自動採用）<br>
       - 空行でグループ区切り
     </div>

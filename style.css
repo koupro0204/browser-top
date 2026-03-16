@@ -458,6 +458,150 @@ body {
   border-color: #4a9fff;
 }
 
+/* Group type select in Add Group modal */
+.group-type-select {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.group-type-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  background: #1a1a2e;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.group-type-option input[type="radio"] {
+  display: none;
+}
+
+.group-type-option:hover {
+  border-color: #4a9fff;
+  color: #ccc;
+}
+
+.group-type-option.selected {
+  border-color: #e94560;
+  color: #fff;
+  background: rgba(233, 69, 96, 0.08);
+}
+
+.group-type-icon {
+  font-size: 16px;
+}
+
+/* Music Widget */
+.music-group {
+  flex: 0 0 auto;
+}
+
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 80px);
+  gap: 8px;
+}
+
+.music-card {
+  position: relative;
+  display: block;
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  text-decoration: none;
+}
+
+.music-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.music-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transform: scale(1.35);
+}
+
+.music-card-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2px 4px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  color: #fff;
+  font-size: 9px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.music-card:hover .music-card-name {
+  opacity: 1;
+}
+
+.music-card-delete {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(233, 69, 96, 0.9);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.music-card:hover .music-card-delete {
+  opacity: 1;
+}
+
+.music-card.dragging {
+  opacity: 0.4;
+}
+
+.music-card.drag-over {
+  outline: 2px solid #e94560;
+  outline-offset: -2px;
+}
+
+/* Music track preview in modal */
+.music-track-preview {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.music-track-preview img {
+  max-width: 200px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
 /* Settings section titles */
 .settings-section-title {
   font-size: 14px;

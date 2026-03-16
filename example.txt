@@ -12,3 +12,8 @@ Tools
 Notion,https://www.notion.so
 Slack,https://slack.com
 ChatGPT,https://chat.openai.com
+
+[music]My Playlist
+Never Grow Up (Acoustic Version),https://music.youtube.com/watch?v=N7Vutidbn50&si=OlqCMFP5u31az8Zn
+PAIN IS BEAUTY,https://music.youtube.com/watch?v=uRY_Cl5kjto&si=dG1sNqchI7u3gWuf
+Angel,https://music.youtube.com/watch?v=yWlP6NrELUM&si=D5p-N7UEtaTSdZjJ

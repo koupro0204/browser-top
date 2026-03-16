@@ -67,6 +67,18 @@ function hostFromURL(url) {
   catch { return url; }
 }
 
+// Music widget helpers
+function extractVideoId(url) {
+  try {
+    var u = new URL(url);
+    return u.searchParams.get('v') || '';
+  } catch { return ''; }
+}
+
+function ytThumbnailURL(videoId) {
+  return 'https://i.ytimg.com/vi/' + videoId + '/hqdefault.jpg';
+}
+
 // Render
 let addLinkGroupIndex = null;
 let editLinkGroupIndex = null;
@@ -99,14 +111,22 @@ function render() {
       const addLink = document.createElement('button');
       addLink.className = 'group-add';
       addLink.textContent = '+';
-      addLink.title = 'Add link';
+      addLink.title = group.type === 'music' ? 'Add track' : 'Add link';
       addLink.addEventListener('click', function() {
         addLinkGroupIndex = gi;
-        document.getElementById('input-link-name').value = '';
-        document.getElementById('input-link-url').value = '';
-        document.getElementById('input-link-icon').value = '';
-        openModal('modal-link');
-        document.getElementById('input-link-name').focus();
+        if (group.type === 'music') {
+          document.getElementById('input-music-name').value = '';
+          document.getElementById('input-music-url').value = '';
+          document.getElementById('music-track-preview').innerHTML = '';
+          openModal('modal-music-track');
+          document.getElementById('input-music-name').focus();
+        } else {
+          document.getElementById('input-link-name').value = '';
+          document.getElementById('input-link-url').value = '';
+          document.getElementById('input-link-icon').value = '';
+          openModal('modal-link');
+          document.getElementById('input-link-name').focus();
+        }
       });
 
       const editGroup = document.createElement('button');
@@ -182,6 +202,91 @@ function render() {
       header.appendChild(actions);
       header.appendChild(title);
       section.appendChild(header);
+
+      // Music widget group
+      if (group.type === 'music') {
+        section.classList.add('music-group');
+
+        const musicGrid = document.createElement('div');
+        musicGrid.className = 'music-grid';
+        musicGrid.dataset.gi = gi;
+
+        group.links.forEach(function(track, li) {
+          var videoId = extractVideoId(track.url);
+          var art = document.createElement('a');
+          art.className = 'music-card';
+          art.href = track.url;
+          art.target = '_blank';
+          art.rel = 'noopener noreferrer';
+          art.title = track.name;
+          art.draggable = true;
+          art.dataset.gi = gi;
+          art.dataset.li = li;
+
+          // Drag reorder
+          art.addEventListener('dragstart', function(e) {
+            dragSrcGi = gi;
+            dragSrcLi = li;
+            art.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', '');
+          });
+          art.addEventListener('dragend', function() {
+            dragSrcGi = null;
+            dragSrcLi = null;
+            art.classList.remove('dragging');
+            document.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+          });
+          art.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            art.classList.add('drag-over');
+          });
+          art.addEventListener('dragleave', function() { art.classList.remove('drag-over'); });
+          art.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            art.classList.remove('drag-over');
+            if (dragSrcGi === null) return;
+            var targetGi = gi, targetLi = li;
+            if (dragSrcGi === targetGi && dragSrcLi === targetLi) return;
+            getData(function(d) {
+              var item = d[dragSrcGi].links.splice(dragSrcLi, 1)[0];
+              d[targetGi].links.splice(targetLi, 0, item);
+              saveData(d, render);
+            });
+          });
+
+          var img = document.createElement('img');
+          img.src = track.icon || (videoId ? ytThumbnailURL(videoId) : '');
+          img.alt = track.name;
+
+          var del = document.createElement('button');
+          del.className = 'music-card-delete';
+          del.textContent = '\u00d7';
+          del.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            getData(function(d) {
+              d[gi].links.splice(li, 1);
+              saveData(d, render);
+            });
+          });
+
+          var nameEl = document.createElement('div');
+          nameEl.className = 'music-card-name';
+          nameEl.textContent = track.name;
+
+          art.appendChild(img);
+          art.appendChild(del);
+          art.appendChild(nameEl);
+          musicGrid.appendChild(art);
+        });
+
+        section.appendChild(musicGrid);
+        container.appendChild(section);
+        return; // skip normal grid rendering
+      }
 
       const grid = document.createElement('div');
       grid.className = 'group-grid';
@@ -403,15 +508,38 @@ document.getElementById('input-link-url').addEventListener('keydown', function(e
 // Save group
 document.getElementById('btn-add-group').addEventListener('click', function() {
   document.getElementById('input-group-name').value = '';
+  // Reset type selection
+  document.querySelectorAll('.group-type-option').forEach(function(opt) {
+    opt.classList.remove('selected');
+    opt.querySelector('input').checked = false;
+  });
+  var normalOpt = document.querySelector('.group-type-option[data-type="normal"]');
+  normalOpt.classList.add('selected');
+  normalOpt.querySelector('input').checked = true;
+  document.getElementById('input-group-name').placeholder = 'My Service';
   openModal('modal-group');
   document.getElementById('input-group-name').focus();
+});
+
+// Group type selection
+document.querySelectorAll('.group-type-option').forEach(function(opt) {
+  opt.addEventListener('click', function() {
+    document.querySelectorAll('.group-type-option').forEach(function(o) { o.classList.remove('selected'); });
+    opt.classList.add('selected');
+    opt.querySelector('input').checked = true;
+    var type = opt.getAttribute('data-type');
+    document.getElementById('input-group-name').placeholder = type === 'music' ? 'My Playlist' : 'My Service';
+  });
 });
 
 document.getElementById('btn-save-group').addEventListener('click', function() {
   const name = document.getElementById('input-group-name').value.trim();
   if (!name) return;
+  var selectedType = document.querySelector('.group-type-option.selected').getAttribute('data-type');
   getData(function(d) {
-    d.push({ name: name, links: [] });
+    var group = { name: name, links: [] };
+    if (selectedType === 'music') group.type = 'music';
+    d.push(group);
     saveData(d, function() {
       closeModal('modal-group');
       render();
@@ -421,6 +549,44 @@ document.getElementById('btn-save-group').addEventListener('click', function() {
 
 document.getElementById('input-group-name').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-save-group').click(); }
+});
+
+// Music track modal
+var addMusicGroupIndex = null;
+
+document.getElementById('input-music-url').addEventListener('input', function() {
+  var url = this.value.trim();
+  var preview = document.getElementById('music-track-preview');
+  var videoId = extractVideoId(url);
+  if (videoId) {
+    preview.innerHTML = '<img src="' + ytThumbnailURL(videoId) + '" alt="preview">';
+  } else {
+    preview.innerHTML = '';
+  }
+});
+
+document.getElementById('btn-save-music-track').addEventListener('click', function() {
+  var name = document.getElementById('input-music-name').value.trim();
+  var url = document.getElementById('input-music-url').value.trim();
+  if (!url) return;
+  if (!name) {
+    var videoId = extractVideoId(url);
+    name = videoId || 'Track';
+  }
+  getData(function(d) {
+    var gi = addLinkGroupIndex;
+    if (gi !== null && d[gi]) {
+      d[gi].links.push({ name: name, url: url });
+      saveData(d, function() {
+        closeModal('modal-music-track');
+        render();
+      });
+    }
+  });
+});
+
+document.getElementById('input-music-url').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-save-music-track').click(); }
 });
 
 // Save edit link
@@ -485,6 +651,12 @@ function parseImportText(text) {
     var groupName = lines[0];
     if (/^https?:\/\//i.test(groupName)) return;
 
+    var isMusic = false;
+    if (/^\[music\]/i.test(groupName)) {
+      isMusic = true;
+      groupName = groupName.replace(/^\[music\]/i, '').trim();
+    }
+
     var links = [];
     for (var i = 1; i < lines.length; i++) {
       var line = lines[i];
@@ -498,7 +670,9 @@ function parseImportText(text) {
       }
     }
 
-    groups.push({ name: groupName, links: links });
+    var group = { name: groupName, links: links };
+    if (isMusic) group.type = 'music';
+    groups.push(group);
   });
 
   return groups;
@@ -534,7 +708,7 @@ document.getElementById('btn-export').addEventListener('click', function() {
   getData(function(d) {
     let text = '';
     d.forEach(function(g, i) {
-      text += g.name + '\n';
+      text += (g.type === 'music' ? '[music]' : '') + g.name + '\n';
       g.links.forEach(function(l) {
         text += l.name + ',' + l.url + '\n';
       });
