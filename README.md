@@ -4,6 +4,8 @@
 よく使うサービスのURLをグループごとにカード表示し、ブラウザ上から追加・編集・削除できます。
 <img width="2940" height="1610" alt="image" src="https://github.com/user-attachments/assets/1e040f0b-27f9-4c19-910b-cd9d4ec73594" />
 
+GA4のデータを表示するセクションを追加
+<img width="1263" height="786" alt="Image" src="https://github.com/user-attachments/assets/5bd8d517-9fc5-402d-b775-a13ffa4617c9" />
 
 ## Features
 
