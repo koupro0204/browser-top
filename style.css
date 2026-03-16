@@ -253,20 +253,23 @@ body {
   color: #e94560;
 }
 
-/* Bottom actions */
+/* Actions - top right */
 #actions {
+  position: fixed;
+  top: 16px;
+  right: 20px;
   display: flex;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 8px;
+  z-index: 50;
 }
 
 .action-btn {
-  padding: 10px 20px;
+  padding: 6px 14px;
   border: 1px solid #0f3460;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
-  color: #888;
-  font-size: 13px;
+  color: #666;
+  font-size: 12px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
@@ -298,6 +301,8 @@ body {
   padding: 32px;
   width: 90%;
   max-width: 400px;
+  max-height: 85vh;
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
@@ -451,4 +456,264 @@ body {
 .btn-add-row:hover {
   color: #4a9fff;
   border-color: #4a9fff;
+}
+
+/* Settings section titles */
+.settings-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a9fff;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #0f3460;
+}
+
+/* GA4 property rows in settings */
+.ga4-property-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ga4-prop-name {
+  flex: 1;
+}
+
+.ga4-prop-id {
+  flex: 1;
+}
+
+.ga4-prop-delete {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: #e94560;
+  color: #fff;
+  font-size: 14px;
+  line-height: 28px;
+  text-align: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.ga4-prop-delete:hover {
+  background: #d63050;
+}
+
+.btn-ga4-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #4285F4;
+  border-radius: 8px;
+  background: rgba(66, 133, 244, 0.08);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-ga4-auth:hover {
+  background: rgba(66, 133, 244, 0.18);
+  border-color: #5a9cff;
+}
+
+.btn-ga4-auth.connected {
+  border-color: #34A853;
+  background: rgba(52, 168, 83, 0.08);
+}
+
+.btn-ga4-auth.connected:hover {
+  background: rgba(52, 168, 83, 0.18);
+}
+
+#ga4-auth-status {
+  font-size: 12px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+#ga4-auth-status.connected {
+  color: #4caf50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+#ga4-auth-status.disconnected {
+  color: #888;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* GA4 Analytics Dashboard */
+#ga4-dashboard {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 40px;
+  margin-bottom: 24px;
+  padding-top: 28px;
+  border-top: 1px solid #0f3460;
+}
+
+#ga4-dashboard:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.ga4-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ga4-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.ga4-last-updated {
+  font-size: 11px;
+  color: #555;
+  margin-left: auto;
+}
+
+.ga4-refresh-btn {
+  background: #0f3460;
+  border: 1px solid #1a4a8a;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 12px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.ga4-refresh-btn:hover {
+  background: #1a4a8a;
+  color: #fff;
+  border-color: #4a9fff;
+}
+
+.ga4-refresh-btn.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ga4-properties {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.ga4-property-card {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.ga4-property-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ga4-property-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.ga4-report-link {
+  font-size: 12px;
+  color: #4a9fff;
+  text-decoration: none;
+  padding: 2px 8px;
+  border: 1px solid #0f3460;
+  border-radius: 4px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.ga4-report-link:hover {
+  background: rgba(74, 159, 255, 0.1);
+  border-color: #4a9fff;
+}
+
+.ga4-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ga4-metric-label {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.ga4-metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.ga4-metric-change {
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.ga4-metric-change.up {
+  color: #4caf50;
+}
+
+.ga4-metric-change.down {
+  color: #e94560;
+}
+
+.ga4-metric-change.flat {
+  color: #555;
+}
+
+.ga4-chart {
+  display: block;
+  width: 100%;
+  height: 110px;
+  border-radius: 6px;
+}
+
+.ga4-card-loading {
+  color: #555;
+  font-size: 12px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.ga4-card-error {
+  color: #e94560;
+  font-size: 12px;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.ga4-message {
+  color: #555;
+  font-size: 12px;
+  text-align: center;
+  padding: 16px 0;
 }
