@@ -1282,9 +1282,9 @@ function ga4DrawChart(canvas, currentData, previousData, dateLabels) {
 
   var allValues = currentData.concat(previousData || []);
   var max = Math.max.apply(null, allValues);
-  var min = Math.min.apply(null, allValues);
-  if (max === min) { max += 1; min = Math.max(0, min - 1); }
-  var range = max - min;
+  if (max === 0) max = 1;
+  var min = 0;
+  var range = max;
 
   function yPos(val) {
     return padTop + plotH - ((val - min) / range) * plotH;
@@ -1581,8 +1581,36 @@ function renderGA4Card(prop, data) {
   metricsEl.className = 'ga4-metrics';
 
   var metricNames = ['activeUsers', 'eventCount', 'keyEvents', 'newUsers'];
+  var activeMetric = 'activeUsers';
+
+  // Chart label
+  var chartLabel = document.createElement('div');
+  chartLabel.className = 'ga4-chart-label';
+  chartLabel.textContent = ga4MetricLabels[activeMetric];
+
+  var canvas = document.createElement('canvas');
+  canvas.className = 'ga4-chart';
+
+  function updateChart(metricKey) {
+    activeMetric = metricKey;
+    chartLabel.textContent = ga4MetricLabels[metricKey];
+    // Update active state on cells
+    metricsEl.querySelectorAll('.ga4-metric-cell').forEach(function(c) {
+      c.classList.toggle('active', c.dataset.metric === metricKey);
+    });
+    requestAnimationFrame(function() {
+      ga4DrawChart(canvas, data.current.daily[metricKey], data.previous.daily[metricKey], data.dateLabels);
+    });
+  }
+
   metricNames.forEach(function(m) {
     var cell = document.createElement('div');
+    cell.className = 'ga4-metric-cell' + (m === activeMetric ? ' active' : '');
+    cell.dataset.metric = m;
+    cell.style.cursor = 'pointer';
+    cell.addEventListener('click', function() {
+      updateChart(m);
+    });
 
     var label = document.createElement('div');
     label.className = 'ga4-metric-label';
@@ -1604,13 +1632,11 @@ function renderGA4Card(prop, data) {
   });
   card.appendChild(metricsEl);
 
-  // Chart - activeUsers line chart
-  var canvas = document.createElement('canvas');
-  canvas.className = 'ga4-chart';
+  card.appendChild(chartLabel);
   card.appendChild(canvas);
 
   requestAnimationFrame(function() {
-    ga4DrawChart(canvas, data.current.daily.activeUsers, data.previous.daily.activeUsers, data.dateLabels);
+    ga4DrawChart(canvas, data.current.daily[activeMetric], data.previous.daily[activeMetric], data.dateLabels);
   });
 }
 

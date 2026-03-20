@@ -834,6 +834,22 @@ body {
   color: #555;
 }
 
+.ga4-metric-cell {
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.ga4-metric-cell.active {
+  background: rgba(74, 159, 255, 0.12);
+}
+
+.ga4-chart-label {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
 .ga4-chart {
   display: block;
   width: 100%;
