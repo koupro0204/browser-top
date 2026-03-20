@@ -1240,18 +1240,51 @@ function parseGA4Response(currentData, previousData) {
   var currentRows = parseRows(currentData);
   var previousRows = parseRows(previousData);
 
+  // Generate all dates in range (fill gaps with 0)
+  function generateDateRange(startDaysAgo, endDaysAgo) {
+    var dates = [];
+    var d = new Date();
+    d.setHours(0, 0, 0, 0);
+    for (var i = startDaysAgo; i >= endDaysAgo; i--) {
+      var dd = new Date(d);
+      dd.setDate(dd.getDate() - i);
+      var y = dd.getFullYear();
+      var m = String(dd.getMonth() + 1).padStart(2, '0');
+      var day = String(dd.getDate()).padStart(2, '0');
+      dates.push(y + m + day);
+    }
+    return dates;
+  }
+
+  var currentDates = generateDateRange(7, 1);   // 7 days ago to yesterday
+  var previousDates = generateDateRange(14, 8); // 14 days ago to 8 days ago
+
+  function fillRows(rows, dates) {
+    var rowMap = {};
+    rows.forEach(function(r) { rowMap[r.date] = r.metrics; });
+    return dates.map(function(date) {
+      var m = rowMap[date] || {};
+      var filled = {};
+      metricNames.forEach(function(name) { filled[name] = m[name] || 0; });
+      return { date: date, metrics: filled };
+    });
+  }
+
+  var filledCurrent = fillRows(currentRows, currentDates);
+  var filledPrevious = fillRows(previousRows, previousDates);
+
   // Date labels for chart (M/D format)
-  var dateLabels = currentRows.map(function(r) {
+  var dateLabels = filledCurrent.map(function(r) {
     var m = parseInt(r.date.substring(4, 6), 10);
     var d = parseInt(r.date.substring(6, 8), 10);
     return m + '/' + d;
   });
 
   metricNames.forEach(function(m) {
-    current.daily[m] = currentRows.map(function(r) { return r.metrics[m]; });
-    current.totals[m] = currentRows.reduce(function(sum, r) { return sum + r.metrics[m]; }, 0);
-    previous.daily[m] = previousRows.map(function(r) { return r.metrics[m]; });
-    previous.totals[m] = previousRows.reduce(function(sum, r) { return sum + r.metrics[m]; }, 0);
+    current.daily[m] = filledCurrent.map(function(r) { return r.metrics[m]; });
+    current.totals[m] = filledCurrent.reduce(function(sum, r) { return sum + r.metrics[m]; }, 0);
+    previous.daily[m] = filledPrevious.map(function(r) { return r.metrics[m]; });
+    previous.totals[m] = filledPrevious.reduce(function(sum, r) { return sum + r.metrics[m]; }, 0);
   });
 
   return { current: current, previous: previous, dateLabels: dateLabels };
@@ -1276,9 +1309,7 @@ function ga4DrawChart(canvas, currentData, previousData, dateLabels) {
   var plotW = w - padLeft - padRight;
   var plotH = h - padTop - padBottom;
 
-  ctx.clearRect(0, 0, w, h);
-
-  if (!currentData || currentData.length === 0) return;
+  if (!currentData || currentData.length === 0) { ctx.clearRect(0, 0, w, h); return; }
 
   var allValues = currentData.concat(previousData || []);
   var max = Math.max.apply(null, allValues);
@@ -1294,77 +1325,172 @@ function ga4DrawChart(canvas, currentData, previousData, dateLabels) {
     return padLeft + (i / (len - 1)) * plotW;
   }
 
-  // Grid lines and Y-axis labels
-  ctx.font = '10px system-ui, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  var ySteps = 3;
-  for (var s = 0; s <= ySteps; s++) {
-    var val = min + (range * s / ySteps);
-    var y = yPos(val);
-    // Grid line
-    ctx.beginPath();
-    ctx.setLineDash([2, 3]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.moveTo(padLeft, y);
-    ctx.lineTo(w - padRight, y);
-    ctx.stroke();
-    // Label
-    ctx.fillStyle = '#555';
-    ctx.setLineDash([]);
-    ctx.fillText(Math.round(val), padLeft - 6, y);
-  }
+  function drawBase() {
+    ctx.clearRect(0, 0, w, h);
 
-  // X-axis date labels
-  if (dateLabels && dateLabels.length > 0) {
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#555';
+    // Grid lines and Y-axis labels
     ctx.font = '10px system-ui, sans-serif';
-    dateLabels.forEach(function(label, i) {
-      var px = xPos(i, dateLabels.length);
-      ctx.fillText(label, px, h - padBottom + 6);
-    });
-  }
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    var ySteps = 3;
+    for (var s = 0; s <= ySteps; s++) {
+      var val = min + (range * s / ySteps);
+      var y = yPos(val);
+      ctx.beginPath();
+      ctx.setLineDash([2, 3]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(w - padRight, y);
+      ctx.stroke();
+      ctx.fillStyle = '#555';
+      ctx.setLineDash([]);
+      ctx.fillText(Math.round(val), padLeft - 6, y);
+    }
 
-  // Draw previous period (dashed)
-  if (previousData && previousData.length > 0) {
+    // X-axis date labels
+    if (dateLabels && dateLabels.length > 0) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#555';
+      ctx.font = '10px system-ui, sans-serif';
+      dateLabels.forEach(function(label, i) {
+        var px = xPos(i, dateLabels.length);
+        ctx.fillText(label, px, h - padBottom + 6);
+      });
+    }
+
+    // Previous period (dashed)
+    if (previousData && previousData.length > 0) {
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(74, 159, 255, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = 'round';
+      previousData.forEach(function(v, i) {
+        var px = xPos(i, previousData.length);
+        var py = yPos(v);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+    }
+
+    // Current period (solid)
     ctx.beginPath();
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = 'rgba(74, 159, 255, 0.3)';
-    ctx.lineWidth = 1.5;
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#4a9fff';
+    ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
-    previousData.forEach(function(v, i) {
-      var px = xPos(i, previousData.length);
+    currentData.forEach(function(v, i) {
+      var px = xPos(i, currentData.length);
       var py = yPos(v);
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     });
     ctx.stroke();
+
+    // Dots on current
+    currentData.forEach(function(v, i) {
+      ctx.beginPath();
+      ctx.arc(xPos(i, currentData.length), yPos(v), 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#4a9fff';
+      ctx.fill();
+    });
   }
 
-  // Draw current period (solid)
-  ctx.beginPath();
-  ctx.setLineDash([]);
-  ctx.strokeStyle = '#4a9fff';
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  currentData.forEach(function(v, i) {
-    var px = xPos(i, currentData.length);
-    var py = yPos(v);
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  });
-  ctx.stroke();
+  drawBase();
 
-  // Dots on current
-  currentData.forEach(function(v, i) {
+  // DOM tooltip
+  var wrapper = canvas.parentElement;
+  if (!wrapper.style.position || wrapper.style.position === 'static') {
+    wrapper.style.position = 'relative';
+  }
+  var tooltip = wrapper.querySelector('.ga4-chart-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.className = 'ga4-chart-tooltip';
+    wrapper.appendChild(tooltip);
+  }
+  tooltip.style.display = 'none';
+
+  // Guide line canvas overlay (reuse existing or create)
+  function drawOverlay(idx) {
+    drawBase();
+    if (idx < 0 || idx >= currentData.length) return;
+    var px = xPos(idx, currentData.length);
+
+    // Vertical guide line
     ctx.beginPath();
-    ctx.arc(xPos(i, currentData.length), yPos(v), 3, 0, Math.PI * 2);
+    ctx.setLineDash([2, 2]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.moveTo(px, padTop);
+    ctx.lineTo(px, h - padBottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Highlight current dot
+    var cy = yPos(currentData[idx]);
+    ctx.beginPath();
+    ctx.arc(px, cy, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#4a9fff';
     ctx.fill();
-  });
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Highlight previous dot
+    if (previousData && idx < previousData.length) {
+      var py = yPos(previousData[idx]);
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(74, 159, 255, 0.5)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+
+  canvas.onmousemove = function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var closest = -1;
+    var closestDist = Infinity;
+    for (var i = 0; i < currentData.length; i++) {
+      var dist = Math.abs(mx - xPos(i, currentData.length));
+      if (dist < closestDist) { closestDist = dist; closest = i; }
+    }
+    if (closestDist < 25 && closest >= 0) {
+      drawOverlay(closest);
+      var px = xPos(closest, currentData.length);
+      var cy = yPos(currentData[closest]);
+      var hasPrev = previousData && closest < previousData.length;
+      var html = '<span class="ga4-tip-current">' + formatNumber(currentData[closest]) + '</span>';
+      if (hasPrev) {
+        html += '<span class="ga4-tip-prev">前: ' + formatNumber(previousData[closest]) + '</span>';
+      }
+      tooltip.innerHTML = html;
+      tooltip.style.display = 'block';
+      // Position above the dot
+      var tipLeft = px - tooltip.offsetWidth / 2;
+      var tipTop = cy - tooltip.offsetHeight - 10;
+      if (tipLeft < 0) tipLeft = 0;
+      if (tipLeft + tooltip.offsetWidth > w) tipLeft = w - tooltip.offsetWidth;
+      if (tipTop < 0) tipTop = cy + 12;
+      tooltip.style.left = tipLeft + 'px';
+      tooltip.style.top = tipTop + 'px';
+    } else {
+      drawBase();
+      tooltip.style.display = 'none';
+    }
+  };
+
+  canvas.onmouseleave = function() {
+    drawBase();
+    tooltip.style.display = 'none';
+  };
 }
 
 // GA4 Dashboard Rendering
@@ -1633,7 +1759,10 @@ function renderGA4Card(prop, data) {
   card.appendChild(metricsEl);
 
   card.appendChild(chartLabel);
-  card.appendChild(canvas);
+  var chartWrapper = document.createElement('div');
+  chartWrapper.className = 'ga4-chart-wrapper';
+  chartWrapper.appendChild(canvas);
+  card.appendChild(chartWrapper);
 
   requestAnimationFrame(function() {
     ga4DrawChart(canvas, data.current.daily[activeMetric], data.previous.daily[activeMetric], data.dateLabels);
